@@ -12,9 +12,7 @@ import java.util.List;
 import java.util.Random;
 
 public class Test {
-    public static void main(String[] arg){
-        Random rnd=new Random();
-        int size=100;
+    public static void PredefineTable(){
         int[][] maze=new int[][]{
                                 { 0, 0, 0,-1, 0},
                                 {-1,-1, 0, 0, 0},
@@ -23,28 +21,40 @@ public class Test {
                                 {-1, 0, 0, 0, 1}
                                 };
         Mind brain=new Mind();
-        brain.LoadDefault();
+        brain.SetSquareTable(maze);
+        brain.MatrixForm();
+        //Start of tests.
+        brain.SetVariable("epsilon", 0.64);
+        brain.ForceSuccess();
+        //First Test
+        brain.StartGeneral(0,100);
+        brain.Status();
+        //Secon test
+        brain.SetVariable("epsilon",0.1);
+        brain.StartGeneral(0,100);
+        brain.Status();      
+        //Last test
+        brain.SetVariable("epsilon",0.01);
+        brain.StartGeneral(0,100);
+        brain.Status();      
+    }
+    
+    public static void main(String[] arg){
+        Random rnd=new Random();
+        int size=100;
         
-        //brain.AddStates(states);
-        brain.RandomTable(size,0.1,10);
-        //brain.SetSquareTable(maze);
+        Mind brain=new Mind();
+        brain.RandomTable(size, 0.09, 10);
         brain.MatrixForm();
         
-        //Best Way of action.
-        brain.SetVariable("epsilon", 0.64);
-        
-        brain.ForceSuccess();
-        
-        for(int i=0;i<11;i++){
+        for(int i=0;i<1000;i++){
+            brain.SetVariable("epsilon",1.0/(i+1));
             brain.StartRandom(1000);
+            if(brain.Use("win") == 1000){
+                brain.Status();
+                return;
+            }
             brain.Status();
         }
-        
-        brain.SetVariable("epsilon",0.1);
-        for(int i=0;i<11;i++){
-            brain.StartRandom(1000);
-            brain.Status();
-        }
-        
     }
 }

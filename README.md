@@ -12,6 +12,8 @@ The algorithm is related with Markov-Chains [Math,Biology,Chemistry] and
 can be reffered to as a [stochastic] procces enviroment -> each state depends [ONLY] on the previous one.
 
 If you are intrested:
-	Wikipedia: https://en.wikipedia.org/wiki/Q-learning
-	Not-So-Complex explanation: http://mnemstudio.org/path-finding-q-learning-tutorial.htm
-	YouTube[Siraj Raval]: https://www.youtube.com/watch?v=aCEvtRtNO-M
+Wikipedia: https://en.wikipedia.org/wiki/Q-learning
+Not-So-Complex explanation: http://mnemstudio.org/path-finding-q-learning-tutorial.htm
+YouTube[Siraj Raval]: https://www.youtube.com/watch?v=aCEvtRtNO-M
+
+Siraj Raval's YouTube channel is dedicated to computer/math science and has many lecture like videos.

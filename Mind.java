@@ -18,9 +18,11 @@ public class Mind {
     private Map<String,Double> Variable;
     private List<States> DStates;
     
+    //Constructors
     public Mind(){
         this.Variable=new HashMap<String,Double>();
         this.DStates=new ArrayList<States>();
+        this.LoadDefault();
     }
     public Mind(List<String> str,List<Double> doub){
         this.Variable=new HashMap<String,Double>();
@@ -30,13 +32,57 @@ public class Mind {
                 this.Variable.put(str.get(i).toLowerCase(),doub.get(i));
             }
         }
+        this.LoadDefault();
     }
     public Mind(List<States> state){
         this.Variable=new HashMap<String,Double>();
         this.DStates=new ArrayList<States>();
+        this.LoadDefault();
         this.DStates.addAll(state);
     }    
     
+    /*
+        Equtations
+        
+    
+    Note:By observing, I conclude that either I implemented Double-Q-Learning Wrong
+        Or generally the Bellman Equtation works better.
+    */
+    public double Bellman(Actions act){
+        if(act.GetState().GetAttribute("exit")==0.0){
+            return -1*Use("gamma")*(Use("discount")*
+                    act.GetState().GetBestAction().GetReward());
+        }else if(act.GetState().GetAttribute("exit")==1.0){
+            return 1.0+Use("gamma")*(Use("discount")*
+                    act.GetState().GetBestAction().GetReward());
+        }else{
+            return Use("gamma")*(Use("discount")*
+                    act.GetState().GetBestAction().GetReward());
+        }
+    }
+    public double DoubleQ(Actions act){
+        if(act.GetState().GetAttribute("exit")==0.0){
+            return -1-Use("gamma")*Bellman(act.GetState().GetBestAction());
+        }else if(act.GetState().GetAttribute("exit")==1.0){
+            return 1.0+Use("gamma")*Bellman(act.GetState().GetBestAction());
+        }else{
+            return Use("gamma")*Bellman(act.GetState().GetBestAction());
+        }
+    }
+    public double FastConverge(Actions act){
+        if(act.GetState().GetAttribute("exit")==0.0){
+            return -1*Use("gamma")*(Use("discount")*
+                    act.GetState().GetBestAction().GetReward()-act.GetReward());
+        }else if(act.GetState().GetAttribute("exit")==1.0){
+            return 1.0+Use("gamma")*(Use("discount")*
+                    act.GetState().GetBestAction().GetReward()-act.GetReward());
+        }else{
+            return Use("gamma")*(Use("discount")*
+                    act.GetState().GetBestAction().GetReward()-act.GetReward());
+        }
+    }
+    
+    //Getters, Setters, And Utility Functions
     public States GetState(int i){
         return this.DStates.get(i);
     }
@@ -80,32 +126,16 @@ public class Mind {
         this.LoadDefault();
     }
     public void RewardUpdate(States state,Actions act){
-        //Bellman Equtation
-        double result=0;
-        //Instant Reward
-        result=act.GetReward();
-        /*This is the lock of the improved ver. byt is malfunktioning.
-          */
+        /*TODO:
+            Source:https://hira.hope.ac.uk/id/eprint/231/1/Improved-Q-Learning-Oct19-2012.pdf
+            Fuction:Lock Mechanism.
+       
         if(act.GetState().GetAttribute("lock")==1.0){
             state.SetAttribute("lock", 1.0);
             return;
         }
-        if(act.GetState().GetAttribute("exit")==Double.NEGATIVE_INFINITY){
-            //This will be activated if the state is NOT an exit state.
-            result=Use("gamma")*(Use("discount")*
-                    act.GetState().GetBestAction().GetReward());//-act.GetReward());
-        }else if(act.GetState().GetAttribute("exit")==1.0){
-            //If the state is exit and has attribute reward set to 1;
-            act.GetState().SetAttribute("lock", 1.0);
-            result+=1+act.GetState().GetAttribute("reward")+Use("gamma")*(Use("discount")*
-                    act.GetState().GetBestAction().GetReward());//-act.GetReward());
-        }else{
-            //State is exit but is unsatisfiable.
-            result-=Use("gamma")*(Use("discount")*
-                    act.GetState().GetBestAction().GetReward());//-act.GetReward());
-        }
-        //Set the new Reward Value
-        act.SetReward(result);
+        */
+        act.SetReward(Bellman(act));
     }
     public void CheckExitState(States current){
         //  Lost
@@ -142,6 +172,7 @@ public class Mind {
         }
     }
     
+    //Different Starting Options
     public void StartGeneral(){
         States current=this.DStates.get((int)Use("cursor"));
         while(current.GetAttribute("exit")==Double.NEGATIVE_INFINITY){
@@ -218,6 +249,7 @@ public class Mind {
         this.CheckExitState(current);
     }
     
+    //Input/Output options
     public void Status(){
         System.out.println("Generations: "+Use("generations")+"\tWin: "+Use("win")+"\tLost: "+Use("lost")+"\tSteps: "+Use("steps"));
         //this.MatrixForm();
@@ -259,7 +291,7 @@ public class Mind {
         int sz=(int)Math.sqrt(this.DStates.size());
         double node_type=0;
         for(int i=0;i<this.DStates.size();i++){
-            if((i-1)%sz==0){
+            if(i%sz==0){
                 System.out.println();
             }
             node_type=this.DStates.get(i).GetAttribute("exit");
@@ -344,11 +376,7 @@ public class Mind {
         this.AddStates(states);
         
         this.SetRandomObstacles(density);
-        this.SetRandomGoals(rewards,size);
-        //for(int i=0;i<size;i++){
-        //    states.get(rnd.nextInt(size*size)).SetGoal();
-        //}
-        
+        this.SetRandomGoals(rewards,size);        
     }
     public void SetRandomObstacles(double density){
         for(int i=0;i<this.DStates.size();i++){
