@@ -1,17 +1,14 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package QLearnRemastered;
 
-//import QLearnRemastered.Mind;
-import QLearnRemastered.*;
+//If the Mind, States, and Actions classes are in the same folder
+//you do not need to import them.
+//import QLearnRemastered.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
 public class Test {
+    //Example using a predefined 5x5 maze
     public static void PredefineTable(){
         int[][] maze=new int[][]{
                                 { 0, 0, 0,-1, 0},
