@@ -1,14 +1,18 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
 package QLearnRemastered;
 
-//If the Mind, States, and Actions classes are in the same folder
-//you do not need to import them.
-//import QLearnRemastered.*;
+//import QLearnRemastered.Mind;
+import QLearnRemastered.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.Scanner;
 
 public class Test {
-    //Example using a predefined 5x5 maze
     public static void PredefineTable(){
         int[][] maze=new int[][]{
                                 { 0, 0, 0,-1, 0},
@@ -37,21 +41,28 @@ public class Test {
     }
     
     public static void main(String[] arg){
-        Random rnd=new Random();
+        Scanner in=new Scanner(System.in);
         int size=100;
         
         Mind brain=new Mind();
-        brain.RandomTable(size, 0.09, 10);
+        brain.RandomTable(size, 0.13, 10);
         brain.MatrixForm();
+        brain.ForceSuccess();
         
         for(int i=0;i<1000;i++){
             brain.SetVariable("epsilon",1.0/(i+1));
             brain.StartRandom(1000);
             if(brain.Use("win") == 1000){
+                System.out.println("After "+((i+1)*1000)+" generations: ");
                 brain.Status();
                 return;
             }
-            brain.Status();
+            if(i==0){
+                System.out.println("Results after 1000 generations: ");
+                brain.Status();
+            }
+            brain.SetVariable("win", 0.0);
+            brain.SetVariable("lost", 0.0);
         }
     }
 }
