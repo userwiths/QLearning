@@ -25,19 +25,12 @@ public class Test {
         brain.SetSquareTable(maze);
         brain.MatrixForm();
         //Start of tests.
-        brain.SetVariable("epsilon", 0.64);
         brain.ForceSuccess();
-        //First Test
-        brain.StartGeneral(0,100);
-        brain.Status();
-        //Secon test
-        brain.SetVariable("epsilon",0.1);
-        brain.StartGeneral(0,100);
-        brain.Status();      
-        //Last test
-        brain.SetVariable("epsilon",0.01);
-        brain.StartGeneral(0,100);
-        brain.Status();      
+        for(int i=0;i<5;i++){
+            brain.SetVariable("epsilon",1.0/((i+1)*10));
+            brain.StartGeneral(0,100);
+            brain.Status();
+        }
     }
     
     public static void main(String[] arg){
@@ -55,7 +48,7 @@ public class Test {
             if(brain.Use("win") == 1000){
                 System.out.println("After "+((i+1)*1000)+" generations: ");
                 brain.Status();
-                return;
+                break;
             }
             if(i==0){
                 System.out.println("Results after 1000 generations: ");
@@ -64,5 +57,6 @@ public class Test {
             brain.SetVariable("win", 0.0);
             brain.SetVariable("lost", 0.0);
         }
+        //PredefineTable();
     }
 }

@@ -49,7 +49,7 @@ public class Mind {
         Or generally the Bellman Equtation works better.
     */
     public double Bellman(Actions act){
-        if(act.GetState().GetAttribute("exit")==0.0){
+        if(act.GetState().GetAttribute("exit")==-1.0){
             return -1*Use("gamma")*(Use("discount")*
                     act.GetState().GetBestAction().GetReward());
         }else if(act.GetState().GetAttribute("exit")==1.0){
@@ -61,24 +61,21 @@ public class Mind {
         }
     }
     public double DoubleQ(Actions act){
-        if(act.GetState().GetAttribute("exit")==0.0){
-            return -1-Use("gamma")*Bellman(act.GetState().GetBestAction());
+        if(act.GetState().GetAttribute("exit")==-1.0){
+            return -1-Use("gamma")*(Bellman(act.GetState().GetBestAction())-Bellman(act));
         }else if(act.GetState().GetAttribute("exit")==1.0){
-            return 1.0+Use("gamma")*Bellman(act.GetState().GetBestAction());
+            return 1.0+Use("gamma")*(Bellman(act.GetState().GetBestAction())-Bellman(act));
         }else{
-            return Use("gamma")*Bellman(act.GetState().GetBestAction());
+            return Use("gamma")*(Bellman(act.GetState().GetBestAction())-Bellman(act));
         }
     }
     public double FastConverge(Actions act){
-        if(act.GetState().GetAttribute("exit")==0.0){
-            return -1*Use("gamma")*(Use("discount")*
-                    act.GetState().GetBestAction().GetReward()-act.GetReward());
+        if(act.GetState().GetAttribute("exit")==-1.0){
+            return -1*Use("gamma")*(Bellman(act.GetState().GetBestAction())-Bellman(act));
         }else if(act.GetState().GetAttribute("exit")==1.0){
-            return 1.0+Use("gamma")*(Use("discount")*
-                    act.GetState().GetBestAction().GetReward()-act.GetReward());
+            return 1.0+Use("gamma")*(Bellman(act.GetState().GetBestAction())-Bellman(act));
         }else{
-            return Use("gamma")*(Use("discount")*
-                    act.GetState().GetBestAction().GetReward()-act.GetReward());
+            return Use("gamma")*(Bellman(act.GetState().GetBestAction())-Bellman(act));
         }
     }
     
@@ -139,11 +136,11 @@ public class Mind {
     }
     public void CheckExitState(States current){
         //  Lost
-        if(current.GetAttribute("exit")==0){
+        if(current.GetAttribute("exit")==-1.0){
             this.SetVariable("lost", Use("lost")+1);
             this.SetVariable("steps", 0.0);
         //  WON
-        }else if(current.GetAttribute("exit")==1){
+        }else if(current.GetAttribute("exit")==1.0){
             this.SetVariable("win", Use("win")+1);
             this.SetVariable("steps", 0.0);
         }
@@ -175,7 +172,7 @@ public class Mind {
     //Different Starting Options
     public void StartGeneral(){
         States current=this.DStates.get((int)Use("cursor"));
-        while(current.GetAttribute("exit")==Double.NEGATIVE_INFINITY){
+        while(current.GetAttribute("exit")==0.0){
             current=ExecuteAction(current);
             if(Use("steps")>=Use("max_steps")){
                 this.SetVariable("steps", 0.0);
@@ -186,7 +183,7 @@ public class Mind {
     }
     public void StartGeneral(int cursor){
         States current=this.DStates.get(cursor);
-        while(current.GetAttribute("exit")==Double.NEGATIVE_INFINITY){
+        while(current.GetAttribute("exit")==0.0){
             current=ExecuteAction(current);
             this.SetVariable("steps", Use("steps")+1.0);
             if(Use("steps")>=Use("max_steps")){
@@ -201,7 +198,7 @@ public class Mind {
             return;
         }
         States current=this.DStates.get(cursor);
-        while(current.GetAttribute("exit")==Double.NEGATIVE_INFINITY){
+        while(current.GetAttribute("exit")==0.0){
             current=ExecuteAction(current); 
             if(Use("steps")>=Use("max_steps")){
                 this.SetVariable("steps", 0.0);
@@ -221,7 +218,7 @@ public class Mind {
             //Do not land on a forbiden ground.
             do{
                 index=rnd.nextInt(this.DStates.size());
-            }while(this.DStates.get(index).GetAttribute("exit")!=Double.NEGATIVE_INFINITY);
+            }while(this.DStates.get(index).GetAttribute("exit")!=0.0);
             StartGeneral(index);
         }
     }
@@ -229,7 +226,7 @@ public class Mind {
         States current=this.DStates.get((int)Use("cursor"));
         Random rnd=new Random();
         Actions choosed;
-        while(current.GetAttribute("exit")==Double.NEGATIVE_INFINITY){
+        while(current.GetAttribute("exit")==0.0){
             if(rnd.nextInt((int)10)<Use("epsilon")){
                 choosed=current.GetRandomAction();
                 RewardUpdate(current,choosed);
@@ -275,7 +272,7 @@ public class Mind {
     public void PrintPath(int start){
         States current=this.DStates.get(start);
         System.out.println("Starting from : "+start);
-        while(current.GetAttribute("exit")==Double.NEGATIVE_INFINITY){
+        while(current.GetAttribute("exit")==0.0){
             System.out.println("Went: "+current.ImprovedBestAction().GetName());
             current=ExecuteAction(current);
             this.SetVariable("steps", Use("steps")+1.0);
@@ -299,7 +296,7 @@ public class Mind {
                 System.out.print("-");
                 continue;
             }
-            if(node_type==Double.NEGATIVE_INFINITY){
+            if(node_type==0.0){
                 System.out.print(" ");
             }else if(node_type==1){
                 System.out.print("x");
@@ -311,7 +308,7 @@ public class Mind {
     }
     public void LinearForm(){
         for(States state:this.DStates){
-            if(state.GetAttribute("exit")==Double.NEGATIVE_INFINITY){
+            if(state.GetAttribute("exit")==0.0){
                 System.out.print("-");
             }else if(state.GetAttribute("exit")==0){
                 System.out.print("#");

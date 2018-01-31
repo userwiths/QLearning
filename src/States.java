@@ -22,7 +22,7 @@ public class States {
     public States(){
         this.Attributes=new HashMap<String,Double>();
         this.Actions=new ArrayList<Actions>();
-        this.Attributes.put("exit", Double.NEGATIVE_INFINITY);
+        this.Attributes.put("exit", 0.0);
         this.Attributes.put("reward", 0.0);
         this.Attributes.put("lock", 0.0);
     }
@@ -34,7 +34,7 @@ public class States {
             }
         }
         this.Actions=new ArrayList<Actions>();
-        this.Attributes.put("exit", Double.NEGATIVE_INFINITY);
+        this.Attributes.put("exit", 0.0);
         this.Attributes.put("reward", 0.0);
     }
     
@@ -70,8 +70,8 @@ public class States {
         this.Attributes.put("lock", 1.0);
     }
     public void SetObstacle(){
-        this.Attributes.put("exit", 0.0);
-        this.Attributes.put("reward",-2.0);
+        this.Attributes.put("exit", -1.0);
+        this.Attributes.put("reward",-10.0);
         this.Attributes.put("lock", 0.0);
     }
     public Actions GetBestAction(){
@@ -91,7 +91,7 @@ public class States {
     }
     public void RemovePenalty(){
         for(int i=0;i<this.Actions.size();i++){
-            if(this.Actions.get(i).GetState().GetAttribute("exit")==0.0){
+            if(this.Actions.get(i).GetState().GetAttribute("exit")==-1.0){
                 this.Actions.remove(i);
             }
         }
@@ -101,7 +101,7 @@ public class States {
         int index=0;
         for(int i=0;i<this.Actions.size();i++){
             if(this.Actions.get(i).GetReward()>=result &&
-                    this.Actions.get(i).GetState().GetAttribute("exit")!=0){
+                    this.Actions.get(i).GetState().GetAttribute("exit")!=-1.0){
                 result=this.Actions.get(i).GetReward();
                 index=i;
             }
