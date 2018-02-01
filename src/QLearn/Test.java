@@ -3,14 +3,9 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package QLearnRemastered;
+package QLearn;
 
-//import QLearnRemastered.Mind;
-import QLearnRemastered.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.Scanner;
+import java.util.*;
 
 public class Test {
     public static void PredefineTable(){

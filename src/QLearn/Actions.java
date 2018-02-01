@@ -1,7 +1,6 @@
-package QLearnRemastered;
+package QLearn;
 
 import java.util.Random;
-import QLearnRemastered.States;
 
 public class Actions {
     private double Reward;

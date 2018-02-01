@@ -3,16 +3,9 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package QLearnRemastered;
+package QLearn;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-
-import QLearnRemastered.States;
-import QLearnRemastered.Actions;
+import java.util.*;
 
 public class Mind {
     private Map<String,Double> Variable;
