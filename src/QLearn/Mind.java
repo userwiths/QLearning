@@ -1,11 +1,10 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package QLearn;
 
+import java.awt.Color;
+import java.awt.GridLayout;
+
 import java.util.*;
+import javax.swing.*;
 
 public class Mind {
     private Map<String,Double> Variable;
@@ -36,44 +35,22 @@ public class Mind {
     
     /*
         Equtations
-        
-    
-    Note:By observing, I conclude that either I implemented Double-Q-Learning Wrong
-        Or generally the Bellman Equtation works better.
+        NOTE: For now Bellman is the best implemented method. I will try implementing them again later.
     */
-    public double Bellman(Actions act){
-        if(act.GetState().GetAttribute("exit")==-1.0){
-            return -1*Use("gamma")*(Use("discount")*
-                    act.GetState().GetBestAction().GetReward());
-        }else if(act.GetState().GetAttribute("exit")==1.0){
-            return 1.0+Use("gamma")*(Use("discount")*
-                    act.GetState().GetBestAction().GetReward());
-        }else{
-            return Use("gamma")*(Use("discount")*
-                    act.GetState().GetBestAction().GetReward());
-        }
+    public double Bellman(States state,Actions act){
+        return act.getState().getAttribute("exit")+
+                Use("gamma")*Use("discount")*act.getState().getBestAction().getReward();
     }
     public double DoubleQ(Actions act){
-        if(act.GetState().GetAttribute("exit")==-1.0){
-            return -1-Use("gamma")*(Bellman(act.GetState().GetBestAction())-Bellman(act));
-        }else if(act.GetState().GetAttribute("exit")==1.0){
-            return 1.0+Use("gamma")*(Bellman(act.GetState().GetBestAction())-Bellman(act));
-        }else{
-            return Use("gamma")*(Bellman(act.GetState().GetBestAction())-Bellman(act));
-        }
+        return act.getState().getAttribute("exit")+Use("gamma")*(Use("discount")*
+                    act.getState().getBestAction().getReward());
     }
-    public double FastConverge(Actions act){
-        if(act.GetState().GetAttribute("exit")==-1.0){
-            return -1*Use("gamma")*(Bellman(act.GetState().GetBestAction())-Bellman(act));
-        }else if(act.GetState().GetAttribute("exit")==1.0){
-            return 1.0+Use("gamma")*(Bellman(act.GetState().GetBestAction())-Bellman(act));
-        }else{
-            return Use("gamma")*(Bellman(act.GetState().GetBestAction())-Bellman(act));
-        }
-    }
-    
+    /*
+        Additional conditions
+        https://pdfs.semanticscholar.org/fe60/f0d1bff543a86c15a5851ee6a948b04d10cf.pdf
+    */
     //Getters, Setters, And Utility Functions
-    public States GetState(int i){
+    public States getState(int i){
         return this.DStates.get(i);
     }
     public void AddStates(List<States> st){
@@ -85,7 +62,7 @@ public class Mind {
     public void RemoveVariable(String name){
         this.Variable.remove(name);
     }
-    public void SetVariable(String name,double value){
+    public void setVariable(String name,double value){
         if(this.Variable.containsKey(name)){
             this.Variable.replace(name, value);
         }else{
@@ -115,27 +92,37 @@ public class Mind {
         this.Variable.clear();
         this.LoadDefault();
     }
+    public int CountRewards(){
+        int count=0;
+        for(States state:this.DStates){
+            if(state.getAttribute("exit")==1.0){
+                count++;
+            }
+        }
+        return count;
+    }
+    //Run time used. Separate different ideas of the algorithm.
     public void RewardUpdate(States state,Actions act){
         /*TODO:
             Source:https://hira.hope.ac.uk/id/eprint/231/1/Improved-Q-Learning-Oct19-2012.pdf
             Fuction:Lock Mechanism.
        
-        if(act.GetState().GetAttribute("lock")==1.0){
-            state.SetAttribute("lock", 1.0);
+        if(act.getState().getAttribute("lock")==1.0){
+            state.setAttribute("lock", 1.0);
             return;
         }
         */
-        act.SetReward(Bellman(act));
+        act.setReward(Bellman(state,act));
     }
     public void CheckExitState(States current){
         //  Lost
-        if(current.GetAttribute("exit")==-1.0){
-            this.SetVariable("lost", Use("lost")+1);
-            this.SetVariable("steps", 0.0);
+        if(current.getAttribute("exit")==-1.0){
+            this.setVariable("lost", Use("lost")+1);
+            this.setVariable("steps", 0.0);
         //  WON
-        }else if(current.GetAttribute("exit")==1.0){
-            this.SetVariable("win", Use("win")+1);
-            this.SetVariable("steps", 0.0);
+        }else if(current.getAttribute("exit")==1.0){
+            this.setVariable("win", Use("win")+1);
+            this.setVariable("steps", 0.0);
         }
     }
     public States ExecuteAction(States current){
@@ -145,15 +132,15 @@ public class Mind {
         if(rnd.nextDouble()<Use("epsilon")){
             choosed=current.GetRandomAction();
             RewardUpdate(current,choosed);
-            current=choosed.GetState();
-            this.SetVariable("steps", Use("steps")+1);
+            current=choosed.getState();
+            this.setVariable("steps", Use("steps")+1);
             return current;
         }
         //Follow the best available action.
-        choosed=current.ImprovedBestAction();
+        choosed=current.getBestAction();
         RewardUpdate(current,choosed);
-        current=choosed.GetState();
-        this.SetVariable("steps", Use("steps")+1);
+        current=choosed.getState();
+        this.setVariable("steps", Use("steps")+1);
         return current;
     }
     public void ForceSuccess(){
@@ -161,14 +148,22 @@ public class Mind {
             this.DStates.get(i).RemovePenalty();
         }
     }
-    
+    //TODO
+    public void MultiReward(){
+        for(int i=0;i<this.DStates.size();i++){
+            if(this.DStates.get(i).getAttribute("exit")==1.0){
+                
+            }
+        }
+    }
+  
     //Different Starting Options
     public void StartGeneral(){
         States current=this.DStates.get((int)Use("cursor"));
-        while(current.GetAttribute("exit")==0.0){
+        while(current.getAttribute("exit")==0.0){
             current=ExecuteAction(current);
             if(Use("steps")>=Use("max_steps")){
-                this.SetVariable("steps", 0.0);
+                this.setVariable("steps", 0.0);
                 break;
             }
         }
@@ -176,11 +171,11 @@ public class Mind {
     }
     public void StartGeneral(int cursor){
         States current=this.DStates.get(cursor);
-        while(current.GetAttribute("exit")==0.0){
+        while(current.getAttribute("exit")==0.0){
             current=ExecuteAction(current);
-            this.SetVariable("steps", Use("steps")+1.0);
+            this.setVariable("steps", Use("steps")+1.0);
             if(Use("steps")>=Use("max_steps")){
-                this.SetVariable("steps", 0.0);
+                this.setVariable("steps", 0.0);
                 break;
             }
         }
@@ -191,27 +186,42 @@ public class Mind {
             return;
         }
         States current=this.DStates.get(cursor);
-        while(current.GetAttribute("exit")==0.0){
+        while(current.getAttribute("exit")==0.0){
             current=ExecuteAction(current); 
             if(Use("steps")>=Use("max_steps")){
-                this.SetVariable("steps", 0.0);
+                this.setVariable("steps", 0.0);
                 break;
             }
         }
         this.CheckExitState(current);
         StartGeneral(cursor,generations-1);
     }
+    public void StartStudy(boolean verbose){
+        for(int i=0;i<1000;i++){
+            this.setVariable("epsilon",1.0/(i+1));
+            this.StartRandom(1000);
+            if(this.Use("win") > 900){
+                break;
+            }
+            if(verbose){
+                System.out.println("After "+((i+1)*1000)+" generations: ");
+                this.Status();
+            }
+            this.setVariable("win", 0.0);
+            this.setVariable("lost", 0.0);
+        }
+    }
     public void StartRandom(int generations){
         Random rnd=new Random();
         int index=0;
         //Keep trak of generations.
-        SetVariable("generations",Use("generations")+generations);
+        setVariable("generations",Use("generations")+generations);
         //Execute for the given nuber of cycles/generations
         for(int i=0;i<generations;i++){
             //Do not land on a forbiden ground.
             do{
                 index=rnd.nextInt(this.DStates.size());
-            }while(this.DStates.get(index).GetAttribute("exit")!=0.0);
+            }while(this.DStates.get(index).getAttribute("exit")!=0.0);
             StartGeneral(index);
         }
     }
@@ -219,40 +229,61 @@ public class Mind {
         States current=this.DStates.get((int)Use("cursor"));
         Random rnd=new Random();
         Actions choosed;
-        while(current.GetAttribute("exit")==0.0){
-            if(rnd.nextInt((int)10)<Use("epsilon")){
+        while(current.getAttribute("exit")==0.0){
+            current.setAttribute("mark", 2);
+            if(rnd.nextDouble()<Use("epsilon")){
                 choosed=current.GetRandomAction();
                 RewardUpdate(current,choosed);
-                current=choosed.GetState();
-                this.SetVariable("steps", Use("steps")+1.0);
-                current.SetAttribute("mark", 2);
+                current=choosed.getState();
+                this.setVariable("steps", Use("steps")+1.0);
+                current.setAttribute("mark", 2);
                 continue;
             }
             //Follow the best available action.
-            choosed=current.GetBestAction();
-            //System.out.println("Went : "+current.GetBestAction());
+            //current.setAttribute("mark", 2);
+            choosed=current.getBestAction();
             RewardUpdate(current,choosed);
-            current=choosed.GetState();
-            this.SetVariable("steps", Use("steps")+1.0);
-            current.SetAttribute("mark", 2);
+            current=choosed.getState();
+            this.setVariable("steps", Use("steps")+1.0);
+            
         }
         this.CheckExitState(current);
+    }
+    public void StartMoreThanOne(int cursor){
+        int count=this.CountRewards();
+        States current=this.DStates.get(cursor);
+        while(count>0){
+            current=ExecuteAction(current);
+            this.setVariable("steps", Use("steps")+1.0);
+            if(Use("steps")>=Use("max_steps")){
+                this.setVariable("steps", 0.0);
+                break;
+            }
+            if(current.getAttribute("exit")==1.0){
+                count--;
+                current.setAttribute("exit", 0.0);
+            }
+            if(current.getAttribute("exit")==-1.0){
+                System.out.println("Could not reach the end .... :(");
+                return;
+            }
+        }
+        System.out.println("Needet "+Use("steps")+" in order to reach current location.");  
     }
     
     //Input/Output options
     public void Status(){
         System.out.println("Generations: "+Use("generations")+"\tWin: "+Use("win")+"\tLost: "+Use("lost")+"\tSteps: "+Use("steps"));
-        //this.MatrixForm();
-        this.SetVariable("steps", 0.0);
-        this.SetVariable("win", 0.0);
-        this.SetVariable("lost", 0.0);
+        this.setVariable("steps", 0.0);
+        this.setVariable("win", 0.0);
+        this.setVariable("lost", 0.0);
     }
     public void ShowChecked(String checked,int n,int m){
         int ls_cursor=0;
         for(int i=0;i<m;i++){
             for(int j=0;j<n;j++){
                 ls_cursor=i*n+j;
-                if(this.DStates.get(ls_cursor).GetAttribute("mark")==1.0){
+                if(this.DStates.get(ls_cursor).getAttribute("mark")==2.0){
                     System.out.print(checked);
                     continue;
                 }else{
@@ -265,16 +296,16 @@ public class Mind {
     public void PrintPath(int start){
         States current=this.DStates.get(start);
         System.out.println("Starting from : "+start);
-        while(current.GetAttribute("exit")==0.0){
-            System.out.println("Went: "+current.ImprovedBestAction().GetName());
+        while(current.getAttribute("exit")==0.0){
+            System.out.println("Went: "+current.ImprovedBestAction().getName());
             current=ExecuteAction(current);
-            this.SetVariable("steps", Use("steps")+1.0);
+            this.setVariable("steps", Use("steps")+1.0);
             if(Use("steps")>=Use("max_steps")){
-                this.SetVariable("steps", 0.0);
+                this.setVariable("steps", 0.0);
                 break;
             }
         }
-        System.out.println("Reached exit ...");
+        System.out.println("Reached exit ...\nWith: "+Use("steps"));
         this.CheckExitState(current);
     }
     public void MatrixForm(){
@@ -284,8 +315,8 @@ public class Mind {
             if(i%sz==0){
                 System.out.println();
             }
-            node_type=this.DStates.get(i).GetAttribute("exit");
-            if(this.DStates.get(i).GetAttribute("mark")==2){
+            node_type=this.DStates.get(i).getAttribute("exit");
+            if(this.DStates.get(i).getAttribute("mark")==2){
                 System.out.print("-");
                 continue;
             }
@@ -301,19 +332,44 @@ public class Mind {
     }
     public void LinearForm(){
         for(States state:this.DStates){
-            if(state.GetAttribute("exit")==0.0){
+            if(state.getAttribute("exit")==0.0){
                 System.out.print("-");
-            }else if(state.GetAttribute("exit")==0){
+            }else if(state.getAttribute("exit")==0){
                 System.out.print("#");
             }else{
                 System.out.print("$");
             }
         }
     }
-    public void RandomTable(int size,double density,int rewards){
-        List<States> states=new ArrayList<States>();
-        int temp=0;
+    //Generating of [Random] enviroment.
+    public void setRandomObstacles(double density){
+        for(int i=0;i<this.DStates.size();i++){
+            if((new Random()).nextDouble()<density){
+                this.DStates.get(i).setObstacle();
+            }
+        }
+    }
+    public void setRandomGoals(int number,int size){
         Random rnd=new Random();
+        for(int i=0;i<number;i++){
+            this.DStates.get(rnd.nextInt(size*size)).setGoal();
+        }
+    }
+    public void setSquareTable(int[][] table){
+        this.setRandomTable(table.length, 0, 0);
+        for(int i=0;i<table.length;i++){
+            for(int j=0;j<table.length;j++){
+                switch(table[i][j]){
+                    case 0:this.DStates.get(j+i*table.length).setAttribute("exit", 0.0);break;
+                    case 1:this.DStates.get(j+i*table.length).setGoal();break;
+                    case -1:this.DStates.get(j+i*table.length).setObstacle();break;
+                    default:this.DStates.get(j+i*table.length).setAttribute("exit",0.0);break;
+                }
+            }
+        }
+    }
+    public void setRandomTable(int size,double density,int rewards){
+        List<States> states=new ArrayList<States>();
         //Empty brain
         for(int i=0;i<size;i++){
             for(int j=0;j<size;j++){
@@ -322,78 +378,152 @@ public class Mind {
         }
         //Until last line
         for(int i=0;i<(size*size)-size;i++){
-            states.get(i).SetAction("Down", new Actions(states.get(i+size)));
+            states.get(i).setAction("Down", new Actions(states.get(i+size)));
         }
         //For top line
         for(int i=0;i<size-2;i++){
-            states.get(i).SetAction("Right", new Actions(states.get(i+1)));
+            states.get(i).setAction("Right", new Actions(states.get(i+1)));
         }
         //Top again
         for(int i=1;i<size-1;i++){
-            states.get(i).SetAction("Left", new Actions(states.get(i-1)));
+            states.get(i).setAction("Left", new Actions(states.get(i-1)));
         }
         //Until top line
         for(int i=(size*size)-1;i>size-1;i--){
-            states.get(i).SetAction("Up", new Actions(states.get(i-size)));
+            states.get(i).setAction("Up", new Actions(states.get(i-size)));
         }
         //Bottom Line
         for(int i=(size*size)-1;i>size*size-size;i--){
-            states.get(i).SetAction("Left", new Actions(states.get(i-1)));
+            states.get(i).setAction("Left", new Actions(states.get(i-1)));
         }
         for(int i=(size*size)-2;i>size*size-size;i--){
-            states.get(i).SetAction("Right", new Actions(states.get(i+1)));
+            states.get(i).setAction("Right", new Actions(states.get(i+1)));
         }
         for(int i=0;i<size*size-1;i+=size){
-            states.get(i).SetAction("Right", new Actions(states.get(i+1)));
+            states.get(i).setAction("Right", new Actions(states.get(i+1)));
         }
         for(int i=size-1;i<=size*size-1;i+=size){
-            states.get(i).SetAction("Left", new Actions(states.get(i-1)));
+            states.get(i).setAction("Left", new Actions(states.get(i-1)));
         }
         //Central
         for(int i=1;i<size;i++){
             for(int j=size;j<size*size-size;j+=size){
-               /* temp=rnd.nextInt(60);
-                if(temp>4 && temp <12){
-                    states.get(i+j).SetObstacle();
-                }*/
-                states.get(i+j).SetAction("Right", new Actions(states.get((i+1)+j)));
-                states.get(i+j).SetAction("Left", new Actions(states.get((i-1)+j)));
-                states.get(i+j).SetAction("Up", new Actions(states.get(i+(j-size))));
-                states.get(i+j).SetAction("Down",new Actions(states.get(i+(j+size))));
+                states.get(i+j).setAction("Right", new Actions(states.get((i+1)+j)));
+                states.get(i+j).setAction("Left", new Actions(states.get((i-1)+j)));
+                states.get(i+j).setAction("Up", new Actions(states.get(i+(j-size))));
+                states.get(i+j).setAction("Down",new Actions(states.get(i+(j+size))));
             }         
         }
         
         this.AddStates(states);
+        this.setRandomObstacles(density);
+        this.setRandomGoals(rewards,size);
+        states.clear();
+    }
+    //Graphic solution, showed using [javax.swing]
+    public void GraphicSolution(){
+        int size= (int)Math.sqrt(this.DStates.size()+1);
+        double state_type=0;
+        JButton button;
+        //Create and set up the window.
+        JFrame frame ;
+        this.StartMark();
         
-        this.SetRandomObstacles(density);
-        this.SetRandomGoals(rewards,size);        
-    }
-    public void SetRandomObstacles(double density){
-        for(int i=0;i<this.DStates.size();i++){
-            if((new Random()).nextDouble()<density){
-                this.DStates.get(i).SetObstacle();
+        frame=new JFrame("Q-Learning");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setLayout(new GridLayout(size,size));
+        for(int i=0;i<size*size;i++){
+            state_type=this.DStates.get(i).getAttribute("exit");
+            button=new JButton();
+            switch((int)state_type){
+                case -1:button=new JButton("-1");
+                          button.setBackground(Color.BLACK);
+                          break;
+                case 0:button=new JButton("0");
+                       button.setBackground(Color.WHITE);
+                       break;
+                case 1:button=new JButton("1");
+                       button.setBackground(Color.green);
+                       break;
+                default:button=new JButton("0");
+                        button.setBackground(Color.WHITE);
+                        break;
+            
             }
-        }
-    }
-    public void SetRandomGoals(int number,int size){
-        Random rnd=new Random();
-        for(int i=0;i<number;i++){
-            this.DStates.get(rnd.nextInt(size*size)).SetGoal();
-        }
-    }
-    public void SetSquareTable(int[][] table){
-        this.RandomTable(table.length, 0, 0);
-        for(int i=0;i<table.length;i++){
-            for(int j=0;j<table.length;j++){
-                switch(table[i][j]){
-                    case 0:this.DStates.get(j+i*table.length).SetAttribute("exit", Double.NEGATIVE_INFINITY);break;
-                    case 1:this.DStates.get(j+i*table.length).SetGoal();break;
-                    case -1:this.DStates.get(j+i*table.length).SetObstacle();break;
-                    default:this.DStates.get(j+i*table.length).SetAttribute("exit", Double.NEGATIVE_INFINITY);break;
-                }
+            if(this.DStates.get(i).getAttribute("mark")==2){
+                button.setBackground(Color.yellow);
             }
+            frame.add(button);
         }
-        //this.DStates
+        //Display the window.
+        frame.pack();
+        frame.setVisible(true);
+    }
+    public void GraphicSolution(Color cl){
+        int size= (int)Math.sqrt(this.DStates.size()+1);
+        double state_type=0;
+        JButton button;
+        //Create and set up the window.
+        JFrame frame ;
+        this.StartMark();
+        
+        frame=new JFrame("Q-Learning");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setLayout(new GridLayout(size,size));
+        for(int i=0;i<size*size;i++){
+            state_type=this.DStates.get(i).getAttribute("exit");
+            button=new JButton();
+            switch((int)state_type){
+                case -1:button=new JButton("-1");
+                          button.setBackground(Color.BLACK);
+                          break;
+                case 0:button=new JButton("0");
+                       button.setBackground(Color.WHITE);
+                       break;
+                case 1:button=new JButton("1");
+                       button.setBackground(Color.green);
+                       break;
+                default:button=new JButton("0");
+                        button.setBackground(Color.WHITE);
+                        break;
+            
+            }
+            if(this.DStates.get(i).getAttribute("mark")==2){
+                button.setBackground(cl);
+            }
+            frame.add(button);
+        }
+        //Display the window.
+        frame.pack();
+        frame.setVisible(true);
     }
 
+    public void GraphicSolutionRandom(){
+        int temp=0;
+        int size=(int)Math.sqrt(this.DStates.size()+1);
+        Random rnd=new Random();
+        
+        do{
+            temp=rnd.nextInt(size*size);
+        }while(this.getState(temp).getAttribute("exit")!=0.0);
+        this.setVariable("cursor", temp);
+        this.GraphicSolution();
+    }
+    public void GraphicSolutionRandom(int generation){
+        int temp=0;
+        int size=(int)Math.sqrt(this.DStates.size()+1);
+        Random rnd=new Random();
+        for(int i=0;i<generation;i++){
+            do{
+                temp=rnd.nextInt(size*size);
+                this.setVariable("cursor", temp);
+            }while(this.getState(temp).getAttribute("exit")!=0.0);
+            this.StartMark();
+        }
+        do{
+            temp=rnd.nextInt(size*size);
+        }while(this.getState(temp).getAttribute("exit")!=0.0);
+        this.setVariable("cursor", temp);
+        this.GraphicSolution();
+    }
 }

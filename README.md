@@ -1,15 +1,10 @@
-This thing here represents my own tryes to implement the Q-Learning algorithm.
-This is not meant for anything bigger as there are already some giants [TensorFlow,.....]
-It is just me fooling around and savin my work.
+This is my implementation of the Q-Learning algorithm.
+It is in the category of Machine Learning (ML).
+Or even more specifically Reinforced Learning (RL).
+Where the "agent" learns about its enviroment by probing
+different parts (states) of it.
 
-Q-Learning is a type of reinforced computer learning algorithm.
-It allows the computer to check/percept its own enviroment and
-act in it. As each action is evaluted in (Q)uality and given a value,
-this value is used later to help the computer make the "Best" choice of action.
-In order for the computer to learn you must give him the enviroment, penalty, and reward.
-
-The algorithm is related with Markov-Chains [Math,Biology,Chemistry] and
-can be reffered to as a [stochastic] procces enviroment -> each state depends [ONLY] on the previous one.
+For more info check the Documentation, or one of the links bellow.
 
 If you are intrested:
 Wikipedia: https://en.wikipedia.org/wiki/Q-learning

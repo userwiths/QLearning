@@ -8,9 +8,8 @@ package QLearn;
 import java.util.*;
 
 public class States {
-    private Map<String,Double> Attributes;
-    private List<Actions> Actions;
-    
+    protected Map<String,Double> Attributes;
+    protected List<Actions> Actions;
     
     public States(){
         this.Attributes=new HashMap<String,Double>();
@@ -31,60 +30,60 @@ public class States {
         this.Attributes.put("reward", 0.0);
     }
     
-    public void SetAction(String name,Actions act){
-        act.SetName(name);
+    public void setAction(String name,Actions act){
+        act.setName(name);
         for(int i=0;i<this.Actions.size();i++){
-            if(this.Actions.get(i).GetName()==name){
+            if(this.Actions.get(i).getName()==name){
                 this.Actions.set(i,act);
                 return;
             }
         }
         this.Actions.add(act);
     }
-    public void SetAttribute(String name,double val){
+    public void setAttribute(String name,double val){
         if(this.Attributes.containsKey(name)){
             this.Attributes.replace(name, val);
             return;
         }
         this.Attributes.put(name, val);
     }
-    public Actions GetAction(String act){
+    public Actions getAction(String act){
         return this.Actions.get(this.Actions.indexOf(act));
     }
-    public double GetAttribute(String name){
+    public double getAttribute(String name){
         if(this.Attributes.get(name)==null){
             return Double.NEGATIVE_INFINITY;
         }
         return this.Attributes.get(name);
     }
-    public void SetGoal(){
+    public void setGoal(){
         this.Attributes.put("exit", 1.0);
         this.Attributes.put("reward", 100.0);
         this.Attributes.put("lock", 1.0);
     }
-    public void SetObstacle(){
+    public void setObstacle(){
         this.Attributes.put("exit", -1.0);
         this.Attributes.put("reward",-10.0);
         this.Attributes.put("lock", 0.0);
     }
-    public Actions GetBestAction(){
+    public Actions getBestAction(){
         double result=0;
         int index=0;
         for(int i=0;i<this.Actions.size();i++){
-            if(this.Actions.get(i).GetReward()>=result){
-                result=this.Actions.get(i).GetReward();
+            if(this.Actions.get(i).getReward()>=result){
+                result=this.Actions.get(i).getReward();
                 index=i;
             }
         }
-        if(this.Actions.get(index).GetState().Actions.isEmpty()){
+        if(this.Actions.get(index).getState().Actions.isEmpty()){
             this.Actions.remove(this.Actions.get(index));
-            return this.GetBestAction();
+            return this.getBestAction();
         }
         return this.Actions.get(index);
     }
     public void RemovePenalty(){
         for(int i=0;i<this.Actions.size();i++){
-            if(this.Actions.get(i).GetState().GetAttribute("exit")==-1.0){
+            if(this.Actions.get(i).getState().getAttribute("exit")==-1.0){
                 this.Actions.remove(i);
             }
         }
@@ -93,9 +92,9 @@ public class States {
         double result=0;
         int index=0;
         for(int i=0;i<this.Actions.size();i++){
-            if(this.Actions.get(i).GetReward()>=result &&
-                    this.Actions.get(i).GetState().GetAttribute("exit")!=-1.0){
-                result=this.Actions.get(i).GetReward();
+            if(this.Actions.get(i).getReward()>=result &&
+                    this.Actions.get(i).getState().getAttribute("exit")!=-1.0){
+                result=this.Actions.get(i).getReward();
                 index=i;
             }
         }
@@ -108,7 +107,7 @@ public class States {
     public void PrintAttributes(){
         System.out.println(this.Attributes.toString());
         for(Actions act:this.Actions){
-            System.out.println(act.GetName()+"\t");
+            System.out.println(act.getName()+"\t");
         }
     }
 }

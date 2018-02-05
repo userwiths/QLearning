@@ -1,6 +1,6 @@
 package QLearn;
 
-import java.util.Random;
+import java.util.*;
 
 public class Actions {
     private double Reward;
@@ -33,22 +33,22 @@ public class Actions {
         this.Name="Action";
     }
     
-    public double GetReward(){
+    public double getReward(){
         return this.Reward;
     }
-    public void SetReward(double set){
+    public void setReward(double set){
         this.Reward=set;
     }
-    public States GetState(){
+    public States getState(){
         return this.EndState;
     }
-    public void SetState(States state){
+    public void setState(States state){
         this.EndState=state;
     }
-    public void SetName(String name){
+    public void setName(String name){
         this.Name=name;
     }
-    public String GetName(){
+    public String getName(){
         return this.Name;
     }
 }
