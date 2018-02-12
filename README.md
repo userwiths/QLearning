@@ -8,7 +8,12 @@ For more info check the Documentation, or one of the links bellow.
 
 If you are intrested:
 Wikipedia: https://en.wikipedia.org/wiki/Q-learning
+
 Not-So-Complex explanation: http://mnemstudio.org/path-finding-q-learning-tutorial.htm
+
 YouTube[Siraj Raval]: https://www.youtube.com/watch?v=aCEvtRtNO-M
 
 Siraj Raval's YouTube channel is dedicated to computer/math science and has many lecture like videos.
+
+
+PS: Hope I'm not doing 'github' too bad.
