@@ -4,6 +4,8 @@ Or even more specifically Reinforced Learning (RL).
 Where the "agent" learns about its enviroment by probing
 different parts (states) of it.
 
+The only draw-back of the program is that its time to learn grows with the size of the enviroment.
+
 For more info check the Documentation, or one of the links bellow.
 
 If you are intrested:
