@@ -2,7 +2,6 @@ package QLearn;
 
 import java.awt.Color;
 import java.awt.GridLayout;
-
 import java.util.*;
 import javax.swing.*;
 
@@ -35,11 +34,21 @@ public class Mind {
     
     /*
         Equtations
-        NOTE: For now Bellman is the best implemented method. I will try implementing them again later.
+        NOTE: For now Bellman's formula is the best implemented method. I will try implementing them again later.
     */
-    public double Bellman(States state,Actions act){
+    public double Quality(States state,Actions act){
         return act.getState().getAttribute("exit")+
                 Use("gamma")*Use("discount")*act.getState().getBestAction().getReward();
+    }
+    public double Value(States state){
+        double result=0;
+        for(Actions act:state.getActions()){
+            result+=act.getReward();
+        }
+        return result/4;
+    }
+    public double Advantage(States state,Actions act){
+        return Quality(state,act)-Value(state);
     }
     public double DoubleQ(Actions act){
         return act.getState().getAttribute("exit")+Use("gamma")*(Use("discount")*
@@ -52,6 +61,9 @@ public class Mind {
     //Getters, Setters, And Utility Functions
     public States getState(int i){
         return this.DStates.get(i);
+    }
+    public List<States> getStates(){
+        return this.DStates;
     }
     public void AddStates(List<States> st){
         this.DStates.addAll(st);
@@ -70,8 +82,9 @@ public class Mind {
         }
     }
     public double Use(String name){
-        return this.Variable.get(name)==null?Double.NEGATIVE_INFINITY:this.Variable.get(name);
+        return this.Variable.get(name)==null?0.0:this.Variable.get(name);
     }
+    //Nullify All Default Variables.
     public void LoadDefault(){
         //Load some default memory values.
         this.Variable.put("gamma",0.86);
@@ -87,6 +100,15 @@ public class Mind {
         this.Variable.put("max_steps", Double.POSITIVE_INFINITY);
         this.Variable.put("explore",0.0);
     }
+    //Nullify Cycle-Dependant variables.
+    public void newCycle(){
+        this.setVariable("win", 0);
+        this.setVariable("lost", 0);
+        for(int i=0;i<this.DStates.size();i++){
+            this.DStates.get(i).setAttribute("mark", 0.0);
+        }
+    }
+    //Nullify all memory -> Same as creating a new instance.
     public void ClearMemory(){
         this.DStates.clear();
         this.Variable.clear();
@@ -112,7 +134,8 @@ public class Mind {
             return;
         }
         */
-        act.setReward(Bellman(state,act));
+        state.setAttribute("value", Value(state));
+        act.setReward(Quality(state,act));
     }
     public void CheckExitState(States current){
         //  Lost
@@ -182,19 +205,17 @@ public class Mind {
         this.CheckExitState(current);
     }
     public void StartGeneral(int cursor,int generations){
-        if(generations==0){
-            return;
-        }
-        States current=this.DStates.get(cursor);
-        while(current.getAttribute("exit")==0.0){
-            current=ExecuteAction(current); 
-            if(Use("steps")>=Use("max_steps")){
-                this.setVariable("steps", 0.0);
-                break;
+        for(int i=0;i<generations;i++){
+            States current=this.DStates.get(cursor);
+            while(current.getAttribute("exit")==0.0){
+                current=ExecuteAction(current); 
+                if(Use("steps")>=Use("max_steps")){
+                    this.setVariable("steps", 0.0);
+                    break;
+                }
             }
+            this.CheckExitState(current);
         }
-        this.CheckExitState(current);
-        StartGeneral(cursor,generations-1);
     }
     public void StartStudy(boolean verbose){
         for(int i=0;i<1000;i++){
@@ -207,8 +228,21 @@ public class Mind {
                 System.out.println("After "+((i+1)*1000)+" generations: ");
                 this.Status();
             }
-            this.setVariable("win", 0.0);
-            this.setVariable("lost", 0.0);
+            this.newCycle();
+        }
+    }
+    public void StartStudy(int episodes,boolean verbose){
+        for(int i=0;i<episodes;i++){
+            this.setVariable("epsilon",1.0/(i+1));
+            this.StartRandom(1000);
+            if(this.Use("win") > 900){
+                break;
+            }
+            if(verbose){
+                System.out.println("After "+((i+1)*1000)+" generations: ");
+                this.Status();
+            }
+            this.newCycle();
         }
     }
     public void StartRandom(int generations){
@@ -230,22 +264,19 @@ public class Mind {
         Random rnd=new Random();
         Actions choosed;
         while(current.getAttribute("exit")==0.0){
+            //current.clearMarked();
             current.setAttribute("mark", 2);
             if(rnd.nextDouble()<Use("epsilon")){
                 choosed=current.GetRandomAction();
                 RewardUpdate(current,choosed);
                 current=choosed.getState();
                 this.setVariable("steps", Use("steps")+1.0);
-                current.setAttribute("mark", 2);
                 continue;
             }
-            //Follow the best available action.
-            //current.setAttribute("mark", 2);
             choosed=current.getBestAction();
             RewardUpdate(current,choosed);
             current=choosed.getState();
             this.setVariable("steps", Use("steps")+1.0);
-            
         }
         this.CheckExitState(current);
     }
@@ -459,6 +490,114 @@ public class Mind {
         frame.pack();
         frame.setVisible(true);
     }
+    public void GraphicSolution(String asname){
+        int size= (int)Math.sqrt(this.DStates.size()+1);
+        double state_type=0;
+        JButton button;
+        //Create and set up the window.
+        JFrame frame ;
+        this.StartMark();
+        
+        frame=new JFrame("Q-Learning");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setLayout(new GridLayout(size,size));
+        for(int i=0;i<size*size;i++){
+            state_type=this.DStates.get(i).getAttribute("exit");
+            button=new JButton(String.valueOf(this.DStates.get(i).getAttribute(asname)));
+            switch((int)state_type){
+                case -1:button.setBackground(Color.BLACK);
+                        break;
+                case 0:button.setBackground(Color.WHITE);
+                       break;
+                case 1:button.setBackground(Color.green);
+                       break;
+                default:button.setBackground(Color.WHITE);
+                        break;
+            
+            }
+            if(this.DStates.get(i).getAttribute("mark")==2){
+                button.setBackground(Color.yellow);
+            }
+            frame.add(button);
+        }
+        //Display the window.
+        frame.pack();
+        frame.setVisible(true);
+    }
+    public void GraphicSolution(int cursor){
+        this.setVariable("cursor", cursor);
+        int size= (int)Math.sqrt(this.DStates.size()+1);
+        double state_type=0;
+        JButton button;
+        //Create and set up the window.
+        JFrame frame ;
+        this.StartMark();
+        
+        frame=new JFrame("Q-Learning");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setLayout(new GridLayout(size,size));
+        for(int i=0;i<size*size;i++){
+            state_type=this.DStates.get(i).getAttribute("exit");
+            button=new JButton();
+            switch((int)state_type){
+                case -1:button=new JButton("-1");
+                          button.setBackground(Color.BLACK);
+                          break;
+                case 0:button=new JButton("0");
+                       button.setBackground(Color.WHITE);
+                       break;
+                case 1:button=new JButton("1");
+                       button.setBackground(Color.green);
+                       break;
+                default:button=new JButton("0");
+                        button.setBackground(Color.WHITE);
+                        break;
+            
+            }
+            if(this.DStates.get(i).getAttribute("mark")==2){
+                button.setBackground(Color.yellow);
+            }
+            frame.add(button);
+        }
+        //Display the window.
+        frame.pack();
+        frame.setVisible(true);
+    }
+    public void GraphicSolution(int cursor,String asname){
+        this.setVariable("cursor", cursor);
+        int size= (int)Math.sqrt(this.DStates.size()+1);
+        double state_type=0;
+        JButton button;
+        //Create and set up the window.
+        JFrame frame ;
+        this.StartMark();
+        
+        frame=new JFrame("Q-Learning");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setLayout(new GridLayout(size,size));
+        for(int i=0;i<size*size;i++){
+            state_type=this.DStates.get(i).getAttribute("exit");
+            button=new JButton(String.valueOf(this.DStates.get(i).getAttribute(asname)));
+            switch((int)state_type){
+                case -1:button.setBackground(Color.BLACK);
+                        break;
+                case 0:button.setBackground(Color.WHITE);
+                       break;
+                case 1:button.setBackground(Color.green);
+                       break;
+                default:button.setBackground(Color.WHITE);
+                        break;
+            
+            }
+            if(this.DStates.get(i).getAttribute("mark")==2){
+                button.setBackground(Color.yellow);
+            }
+            frame.add(button);
+        }
+        //Display the window.
+        frame.pack();
+        frame.setVisible(true);
+    }
     public void GraphicSolution(Color cl){
         int size= (int)Math.sqrt(this.DStates.size()+1);
         double state_type=0;
@@ -497,7 +636,6 @@ public class Mind {
         frame.pack();
         frame.setVisible(true);
     }
-
     public void GraphicSolutionRandom(){
         int temp=0;
         int size=(int)Math.sqrt(this.DStates.size()+1);

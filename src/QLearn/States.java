@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package QLearn;
 
 import java.util.*;
@@ -29,6 +24,10 @@ public class States {
         this.Attributes.put("exit", 0.0);
         this.Attributes.put("reward", 0.0);
     }
+    public States(Map<String,Double> map){
+        this.Actions=new ArrayList<Actions>();
+        this.Attributes=map;
+    }
     
     public void setAction(String name,Actions act){
         act.setName(name);
@@ -40,12 +39,23 @@ public class States {
         }
         this.Actions.add(act);
     }
+    public void setAction(Actions act){
+        for(int i=0;i<this.Actions.size();i++){
+            if(this.Actions.get(i).getName()==act.getName()){
+                this.Actions.remove(i);
+            }
+        }
+        this.Actions.add(act);
+    }
     public void setAttribute(String name,double val){
         if(this.Attributes.containsKey(name)){
             this.Attributes.replace(name, val);
             return;
         }
         this.Attributes.put(name, val);
+    }
+    public List<Actions> getActions(){
+        return this.Actions;
     }
     public Actions getAction(String act){
         return this.Actions.get(this.Actions.indexOf(act));
@@ -56,6 +66,10 @@ public class States {
         }
         return this.Attributes.get(name);
     }
+    public Map<String,Double> getAttributes(){
+        return this.Attributes;
+    }
+    
     public void setGoal(){
         this.Attributes.put("exit", 1.0);
         this.Attributes.put("reward", 100.0);
@@ -84,6 +98,19 @@ public class States {
     public void RemovePenalty(){
         for(int i=0;i<this.Actions.size();i++){
             if(this.Actions.get(i).getState().getAttribute("exit")==-1.0){
+                this.Actions.remove(i);
+            }
+        }
+    }
+    public void clearMarked(){
+        List<Integer> remove=new ArrayList<Integer>();
+        for(int i=0;i<this.Actions.size();i++){
+            if(this.Actions.get(i).getState().getAttribute("mark")==2 || this.Actions.get(i).getState().getAttribute("exit")==-1){
+                remove.add(i);
+            }
+        }
+        for(int i:remove){
+            if(i<this.Actions.size()){
                 this.Actions.remove(i);
             }
         }

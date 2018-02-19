@@ -10,39 +10,35 @@ public class Test {
                                 {-1,-1, 0, 0, 0, 0,-1,-1},
                                 { 0, 0, 0,-1,-1, 0, 0,-1},
                                 {-1, 0,-1,-1,-1,-1, 0, 0},
-                                {-1, 0, 0, 0, 0, 0, 0, 0},//  5
+                                {-1, 0, 0, 0,-1, 0, 0,-1},
                                 { 0, 0, 0,-1, 0, 0, 0,-1},
-                                {-1,-1,-1,-1,-1,-1, 0, 0},
+                                {-1,-1, 0,-1,-1,-1, 0, 0},
                                 {-1, 0, 0, 0, 1, 0, 0, 0}
                                 };
         Mind brain=new Mind();
         brain.setSquareTable(maze);
         brain.MatrixForm();
-        //Start of tests.
-        brain.ForceSuccess();
-        for(int i=0;i<10;i++){
-            brain.setVariable("epsilon",1.0/((i+1)*10));
-            //brain.StartRandom(1000);
-            brain.StartGeneral(0,100);
-        }
-        brain.setVariable("epsilon", 0.00001);
+        brain.StartGeneral(0, 1000);
+        
+        brain.setVariable("epsilon", 0.0);
         brain.GraphicSolution();
     }
     
     public static void main(String[] arg){
+        
         Scanner in=new Scanner(System.in);
         int size=100;
         int temp=0;
         Random rnd=new Random();
         
         Mind brain=new Mind();
-        brain.setRandomTable(size, 0.3, 1);
-        //brain.MatrixForm();
+        brain.setRandomTable(size, 0.36, 1);
         brain.ForceSuccess();
-
-        brain.StartStudy(true);
+        brain.setVariable("max_steps", 100);
+        brain.StartStudy(100,false);
         brain.setVariable("epsilon", 0.0);
         brain.GraphicSolutionRandom(0);
+        
         //PredefineTable();
     }
 }

@@ -1,6 +1,6 @@
 package QLearn;
 
-import java.util.*;
+import java.util.Random;
 
 public class Actions {
     private double Reward;
