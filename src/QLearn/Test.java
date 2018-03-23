@@ -27,18 +27,37 @@ public class Test {
     public static void main(String[] arg){
         
         Scanner in=new Scanner(System.in);
-        int size=100;
+        int size=50;
         int temp=0;
         Random rnd=new Random();
         
         Mind brain=new Mind();
-        brain.setRandomTable(size, 0.36, 1);
-        brain.ForceSuccess();
-        brain.setVariable("max_steps", 100);
-        brain.StartStudy(100,false);
-        brain.setVariable("epsilon", 0.0);
-        brain.GraphicSolutionRandom(0);
+        brain.setRandomTable(size, 0.28, 5);
         
+        System.out.println("Before addition ....");
+        brain.addObjective("Gold");
+        brain.addObjective("Heal");
+        brain.addObjective("Coal");
+        
+        System.out.println("After addition ....");
+        
+        brain.StartStudy(true);
+        brain.GraphicSolutionRandom();
+        in.next();
+        
+        brain.setObjective("Gold");
+        brain.StartStudy(true);
+        brain.GraphicSolutionRandom();
+        
+        brain.setObjective("Heal");
+        brain.StartStudy(true);
+        brain.GraphicSolutionRandom();
+        in.next();
+        
+        brain.setObjective("Coal");
+        brain.GraphicSolutionRandom();
+        System.out.println("Coal: withouth");
+        in.next();
         //PredefineTable();
     }
 }

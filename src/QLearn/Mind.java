@@ -2,18 +2,21 @@ package QLearn;
 
 import java.awt.Color;
 import java.awt.GridLayout;
+
 import java.util.*;
+import java.util.stream.Collectors;
 import javax.swing.*;
 
 public class Mind {
     private Map<String,Double> Variable;
     private List<States> DStates;
+    private String Current="default";
     
     //Constructors
     public Mind(){
         this.Variable=new HashMap<String,Double>();
         this.DStates=new ArrayList<States>();
-        this.LoadDefault();
+        this.loadDefault();
     }
     public Mind(List<String> str,List<Double> doub){
         this.Variable=new HashMap<String,Double>();
@@ -23,55 +26,83 @@ public class Mind {
                 this.Variable.put(str.get(i).toLowerCase(),doub.get(i));
             }
         }
-        this.LoadDefault();
+        this.loadDefault();
     }
     public Mind(List<States> state){
         this.Variable=new HashMap<String,Double>();
         this.DStates=new ArrayList<States>();
-        this.LoadDefault();
+        this.loadDefault();
         this.DStates.addAll(state);
     }    
     
     /*
         Equtations
         NOTE: For now Bellman's formula is the best implemented method. I will try implementing them again later.
+        TODO:   Q(s,a)=V(s)+A(s,a)
     */
     public double Quality(States state,Actions act){
         return act.getState().getAttribute("exit")+
-                Use("gamma")*Use("discount")*act.getState().getBestAction().getReward();
+                Use("gamma")*Use("discount")*act.getState().getBestAction().getValue();
+    }
+    public double QualityAll(States state,Actions act){
+        double result=0.0;
+        for(String objective:state.getObjectives().keySet()){
+            result=act.getState().getObjectives().get(objective)+
+                Use("gamma")*Use("discount")*act.getState().getBestAction(objective).getObjectives().get(objective);
+            act.getObjectives().replace(objective, result);
+        }
+        return Quality(state,act);
     }
     public double Value(States state){
         double result=0;
         for(Actions act:state.getActions()){
-            result+=act.getReward();
+            result+=act.getValue();
         }
-        return result/4;
+        return (double)result/state.getActions().size();
     }
     public double Advantage(States state,Actions act){
         return Quality(state,act)-Value(state);
     }
     public double DoubleQ(Actions act){
         return act.getState().getAttribute("exit")+Use("gamma")*(Use("discount")*
-                    act.getState().getBestAction().getReward());
+                    act.getState().getBestAction().getValue());
+    }
+    /*
+    Different objectives for the agent to follow.
+    */
+    public double ShapeAttribute(States state,Actions act,String name){
+        return this.Quality(state, act)+
+                act.getState().getAttribute(name)-state.getAttribute(name);
+    }
+    public double MaxAttribute(States state,Actions act,String name){
+        return Quality(state,act)+
+                act.getState().getAttribute(name)-state.getAttribute(name);
+    }
+    public double MinAttribute(States state,Actions act,String name){
+        return Quality(state,act)
+                -1*(act.getState().getAttribute(name)+state.getAttribute(name));
+    }
+    public double DistancePassed(States state,Actions act,String name){
+        return this.Quality(state, act)+this.Use("steps")/10.0;
     }
     /*
         Additional conditions
         https://pdfs.semanticscholar.org/fe60/f0d1bff543a86c15a5851ee6a948b04d10cf.pdf
     */
-    //Getters, Setters, And Utility Functions
+    //General Getters & Setters
     public States getState(int i){
         return this.DStates.get(i);
     }
     public List<States> getStates(){
         return this.DStates;
     }
-    public void AddStates(List<States> st){
+    public void addStates(List<States> st){
         this.DStates.addAll(st);
     }
-    public void AddVariable(String name,double value){
+    public void addVariable(String name,double value){
         this.Variable.put(name, value);
     }
-    public void RemoveVariable(String name){
+    public void removeVariable(String name){
         this.Variable.remove(name);
     }
     public void setVariable(String name,double value){
@@ -84,8 +115,14 @@ public class Mind {
     public double Use(String name){
         return this.Variable.get(name)==null?0.0:this.Variable.get(name);
     }
+    public void clearMark(String attrib){
+        for(int i=0;i<this.DStates.size();i++){
+            this.DStates.get(i).setAttribute(attrib, 0.0);
+        }
+    }
+
     //Nullify All Default Variables.
-    public void LoadDefault(){
+    public void loadDefault(){
         //Load some default memory values.
         this.Variable.put("gamma",0.86);
         this.Variable.put("discount",0.58);
@@ -100,21 +137,14 @@ public class Mind {
         this.Variable.put("max_steps", Double.POSITIVE_INFINITY);
         this.Variable.put("explore",0.0);
     }
-    //Nullify Cycle-Dependant variables.
-    public void newCycle(){
-        this.setVariable("win", 0);
-        this.setVariable("lost", 0);
-        for(int i=0;i<this.DStates.size();i++){
-            this.DStates.get(i).setAttribute("mark", 0.0);
-        }
-    }
+
     //Nullify all memory -> Same as creating a new instance.
-    public void ClearMemory(){
+    public void clearMemory(){
         this.DStates.clear();
         this.Variable.clear();
-        this.LoadDefault();
+        this.loadDefault();
     }
-    public int CountRewards(){
+    public int countRewards(){
         int count=0;
         for(States state:this.DStates){
             if(state.getAttribute("exit")==1.0){
@@ -123,21 +153,18 @@ public class Mind {
         }
         return count;
     }
+
     //Run time used. Separate different ideas of the algorithm.
-    public void RewardUpdate(States state,Actions act){
-        /*TODO:
+    public void rewardUpdate(States state,Actions act){
+        /*
+            TODO:
             Source:https://hira.hope.ac.uk/id/eprint/231/1/Improved-Q-Learning-Oct19-2012.pdf
             Fuction:Lock Mechanism.
-       
-        if(act.getState().getAttribute("lock")==1.0){
-            state.setAttribute("lock", 1.0);
-            return;
-        }
         */
-        state.setAttribute("value", Value(state));
-        act.setReward(Quality(state,act));
+        //state.setAttribute("value", Value(state));
+        act.setValue(QualityAll(state,act));
     }
-    public void CheckExitState(States current){
+    public void checkExitState(States current){
         //  Lost
         if(current.getAttribute("exit")==-1.0){
             this.setVariable("lost", Use("lost")+1);
@@ -148,20 +175,20 @@ public class Mind {
             this.setVariable("steps", 0.0);
         }
     }
-    public States ExecuteAction(States current){
+    public States executeAction(States current){
         Random rnd=new Random();
         Actions choosed;
         //Random exploration
         if(rnd.nextDouble()<Use("epsilon")){
-            choosed=current.GetRandomAction();
-            RewardUpdate(current,choosed);
+            choosed=current.getRandomAction();
+            rewardUpdate(current,choosed);
             current=choosed.getState();
             this.setVariable("steps", Use("steps")+1);
             return current;
         }
         //Follow the best available action.
         choosed=current.getBestAction();
-        RewardUpdate(current,choosed);
+        rewardUpdate(current,choosed);
         current=choosed.getState();
         this.setVariable("steps", Use("steps")+1);
         return current;
@@ -171,207 +198,7 @@ public class Mind {
             this.DStates.get(i).RemovePenalty();
         }
     }
-    //TODO
-    public void MultiReward(){
-        for(int i=0;i<this.DStates.size();i++){
-            if(this.DStates.get(i).getAttribute("exit")==1.0){
-                
-            }
-        }
-    }
-  
-    //Different Starting Options
-    public void StartGeneral(){
-        States current=this.DStates.get((int)Use("cursor"));
-        while(current.getAttribute("exit")==0.0){
-            current=ExecuteAction(current);
-            if(Use("steps")>=Use("max_steps")){
-                this.setVariable("steps", 0.0);
-                break;
-            }
-        }
-        this.CheckExitState(current);
-    }
-    public void StartGeneral(int cursor){
-        States current=this.DStates.get(cursor);
-        while(current.getAttribute("exit")==0.0){
-            current=ExecuteAction(current);
-            this.setVariable("steps", Use("steps")+1.0);
-            if(Use("steps")>=Use("max_steps")){
-                this.setVariable("steps", 0.0);
-                break;
-            }
-        }
-        this.CheckExitState(current);
-    }
-    public void StartGeneral(int cursor,int generations){
-        for(int i=0;i<generations;i++){
-            States current=this.DStates.get(cursor);
-            while(current.getAttribute("exit")==0.0){
-                current=ExecuteAction(current); 
-                if(Use("steps")>=Use("max_steps")){
-                    this.setVariable("steps", 0.0);
-                    break;
-                }
-            }
-            this.CheckExitState(current);
-        }
-    }
-    public void StartStudy(boolean verbose){
-        for(int i=0;i<1000;i++){
-            this.setVariable("epsilon",1.0/(i+1));
-            this.StartRandom(1000);
-            if(this.Use("win") > 900){
-                break;
-            }
-            if(verbose){
-                System.out.println("After "+((i+1)*1000)+" generations: ");
-                this.Status();
-            }
-            this.newCycle();
-        }
-    }
-    public void StartStudy(int episodes,boolean verbose){
-        for(int i=0;i<episodes;i++){
-            this.setVariable("epsilon",1.0/(i+1));
-            this.StartRandom(1000);
-            if(this.Use("win") > 900){
-                break;
-            }
-            if(verbose){
-                System.out.println("After "+((i+1)*1000)+" generations: ");
-                this.Status();
-            }
-            this.newCycle();
-        }
-    }
-    public void StartRandom(int generations){
-        Random rnd=new Random();
-        int index=0;
-        //Keep trak of generations.
-        setVariable("generations",Use("generations")+generations);
-        //Execute for the given nuber of cycles/generations
-        for(int i=0;i<generations;i++){
-            //Do not land on a forbiden ground.
-            do{
-                index=rnd.nextInt(this.DStates.size());
-            }while(this.DStates.get(index).getAttribute("exit")!=0.0);
-            StartGeneral(index);
-        }
-    }
-    public void StartMark(){
-        States current=this.DStates.get((int)Use("cursor"));
-        Random rnd=new Random();
-        Actions choosed;
-        while(current.getAttribute("exit")==0.0){
-            //current.clearMarked();
-            current.setAttribute("mark", 2);
-            if(rnd.nextDouble()<Use("epsilon")){
-                choosed=current.GetRandomAction();
-                RewardUpdate(current,choosed);
-                current=choosed.getState();
-                this.setVariable("steps", Use("steps")+1.0);
-                continue;
-            }
-            choosed=current.getBestAction();
-            RewardUpdate(current,choosed);
-            current=choosed.getState();
-            this.setVariable("steps", Use("steps")+1.0);
-        }
-        this.CheckExitState(current);
-    }
-    public void StartMoreThanOne(int cursor){
-        int count=this.CountRewards();
-        States current=this.DStates.get(cursor);
-        while(count>0){
-            current=ExecuteAction(current);
-            this.setVariable("steps", Use("steps")+1.0);
-            if(Use("steps")>=Use("max_steps")){
-                this.setVariable("steps", 0.0);
-                break;
-            }
-            if(current.getAttribute("exit")==1.0){
-                count--;
-                current.setAttribute("exit", 0.0);
-            }
-            if(current.getAttribute("exit")==-1.0){
-                System.out.println("Could not reach the end .... :(");
-                return;
-            }
-        }
-        System.out.println("Needet "+Use("steps")+" in order to reach current location.");  
-    }
-    
-    //Input/Output options
-    public void Status(){
-        System.out.println("Generations: "+Use("generations")+"\tWin: "+Use("win")+"\tLost: "+Use("lost")+"\tSteps: "+Use("steps"));
-        this.setVariable("steps", 0.0);
-        this.setVariable("win", 0.0);
-        this.setVariable("lost", 0.0);
-    }
-    public void ShowChecked(String checked,int n,int m){
-        int ls_cursor=0;
-        for(int i=0;i<m;i++){
-            for(int j=0;j<n;j++){
-                ls_cursor=i*n+j;
-                if(this.DStates.get(ls_cursor).getAttribute("mark")==2.0){
-                    System.out.print(checked);
-                    continue;
-                }else{
-                    System.out.print("-");
-                }
-            }
-            System.out.println();
-        }
-    }
-    public void PrintPath(int start){
-        States current=this.DStates.get(start);
-        System.out.println("Starting from : "+start);
-        while(current.getAttribute("exit")==0.0){
-            System.out.println("Went: "+current.ImprovedBestAction().getName());
-            current=ExecuteAction(current);
-            this.setVariable("steps", Use("steps")+1.0);
-            if(Use("steps")>=Use("max_steps")){
-                this.setVariable("steps", 0.0);
-                break;
-            }
-        }
-        System.out.println("Reached exit ...\nWith: "+Use("steps"));
-        this.CheckExitState(current);
-    }
-    public void MatrixForm(){
-        int sz=(int)Math.sqrt(this.DStates.size());
-        double node_type=0;
-        for(int i=0;i<this.DStates.size();i++){
-            if(i%sz==0){
-                System.out.println();
-            }
-            node_type=this.DStates.get(i).getAttribute("exit");
-            if(this.DStates.get(i).getAttribute("mark")==2){
-                System.out.print("-");
-                continue;
-            }
-            if(node_type==0.0){
-                System.out.print(" ");
-            }else if(node_type==1){
-                System.out.print("x");
-            }else{
-                System.out.print("#");
-            }
-        }
-        System.out.println();
-    }
-    public void LinearForm(){
-        for(States state:this.DStates){
-            if(state.getAttribute("exit")==0.0){
-                System.out.print("-");
-            }else if(state.getAttribute("exit")==0){
-                System.out.print("#");
-            }else{
-                System.out.print("$");
-            }
-        }
-    }
+
     //Generating of [Random] enviroment.
     public void setRandomObstacles(double density){
         for(int i=0;i<this.DStates.size();i++){
@@ -380,10 +207,10 @@ public class Mind {
             }
         }
     }
-    public void setRandomGoals(int number,int size){
+    public void setRandomGoals(int number){
         Random rnd=new Random();
         for(int i=0;i<number;i++){
-            this.DStates.get(rnd.nextInt(size*size)).setGoal();
+            this.DStates.get(rnd.nextInt(this.DStates.size())).setGoal();
         }
     }
     public void setSquareTable(int[][] table){
@@ -446,11 +273,204 @@ public class Mind {
             }         
         }
         
-        this.AddStates(states);
+        this.addStates(states);
         this.setRandomObstacles(density);
-        this.setRandomGoals(rewards,size);
+        this.setRandomGoals(rewards);
         states.clear();
     }
+ 
+    //Different Starting Options
+    public void StartGeneral(){
+        States current=this.DStates.get((int)Use("cursor"));
+        while(current.getAttribute("exit")==0.0){
+            current=executeAction(current);
+            this.setVariable("steps", Use("steps")+1.0);
+            if(Use("steps")>=Use("max_steps")){
+                this.setVariable("steps", 0.0);
+                break;
+            }
+        }
+        this.checkExitState(current);
+    }
+    public void StartGeneral(int cursor){
+        States current=this.DStates.get(cursor);
+        while(current.getAttribute("exit")==0.0){
+            current=executeAction(current);
+            this.setVariable("steps", Use("steps")+1.0);
+            if(Use("steps")>=Use("max_steps")){
+                this.setVariable("steps", 0.0);
+                break;
+            }
+        }
+        this.checkExitState(current);}
+    public void StartGeneral(int cursor,int generations){
+        for(int i=0;i<generations;i++){
+            States current=this.DStates.get(cursor);
+            while(current.getAttribute("exit")==0.0){
+                current=executeAction(current); 
+                if(Use("steps")>=Use("max_steps")){
+                    this.setVariable("steps", 0.0);
+                    break;
+                }
+            }
+            this.checkExitState(current);
+        }
+    }
+    public void StartStudy(boolean verbose){
+        this.setVariable("epsilon", 1.0);
+        for(int i=0;i<100;i++){
+            this.setVariable("epsilon",1.0/(i+1));
+            this.StartRandom(1000);
+            if(this.Use("win") > 900){
+                break;
+            }
+            if(verbose){
+                System.out.println("After "+((i+1)*1000)+" generations: ");
+                System.out.println("Endet "+i+" cycle ...");
+                this.Status();
+            }
+        }
+        this.setVariable("win", 0.0);
+        this.setVariable("epsilon", 0.001);
+    }
+    public void StartStudy(int episodes,boolean verbose){
+        for(int i=0;i<episodes;i++){
+            this.setVariable("epsilon",1.0/(i+1));
+            this.StartRandom(1000);
+            if(this.Use("win") > 900){
+                break;
+            }
+            if(verbose){
+                System.out.println("After "+((i+1)*1000)+" generations: ");
+                this.Status();
+            }
+            
+        }
+    }
+    public void StartRandom(int generations){
+        Random rnd=new Random();
+        int index=0;
+        //Keep trak of generations.
+        setVariable("generations",Use("generations")+generations);
+        //Execute for the given nuber of cycles/generations
+        for(int i=0;i<generations;i++){
+            //Do not land on a forbiden ground.
+            do{
+                index=rnd.nextInt(this.DStates.size());
+            }while(this.DStates.get(index).getAttribute("exit")!=0.0);
+            StartGeneral(index);
+        }
+    }
+    public void StartMark(){
+        States current=this.DStates.get((int)Use("cursor"));
+        Random rnd=new Random();
+        Actions choosed;
+        this.setVariable("steps", 0.0);
+        while(current.getAttribute("exit")==0.0){
+            current.setAttribute("mark", 2);
+            if(rnd.nextDouble()<Use("epsilon")){
+                choosed=current.getRandomAction();
+                rewardUpdate(current,choosed);
+                current=choosed.getState();
+                this.setVariable("steps", Use("steps")+1.0);
+                continue;
+            }
+            choosed=current.getBestAction();
+            rewardUpdate(current,choosed);
+            current=choosed.getState();
+            this.setVariable("steps", Use("steps")+1.0);
+        }
+        //System.out.println("\n\nSteps: "+Use("steps"));
+        this.checkExitState(current);
+    }
+    public void StartWithPriority(Map<String,Double> map){
+        States current = null;
+        Actions action=new Actions(0.0);
+        double sum=0.0;
+        for(String str:map.keySet()){
+            if(!this.DStates.get(0).getObjectives().containsKey(str)){
+                //ERROR: No such objective.
+                return;
+            }
+        }
+        current=this.DStates.get((int)Use("cursor"));
+        while(current.getAttribute("exit")==0.0){
+           current=current.getBestWithPriority(map).getState();
+        }
+        this.checkExitState(current);
+    }
+    
+    //Console Representation options
+    public void Status(){
+        System.out.println("Generations: "+Use("generations")+"\tWin: "+Use("win")+"\tLost: "+Use("lost")+"\tSteps: "+Use("steps"));
+        this.setVariable("steps", 0.0);
+        this.setVariable("win", 0.0);
+        this.setVariable("lost", 0.0);
+    }
+    public void ShowChecked(String checked,int n,int m){
+        int ls_cursor=0;
+        for(int i=0;i<m;i++){
+            for(int j=0;j<n;j++){
+                ls_cursor=i*n+j;
+                if(this.DStates.get(ls_cursor).getAttribute("mark")==2.0){
+                    System.out.print(checked);
+                    continue;
+                }else{
+                    System.out.print("-");
+                }
+            }
+            System.out.println();
+        }
+    }
+    public void PrintPath(int start){
+        States current=this.DStates.get(start);
+        System.out.println("Starting from : "+start);
+        while(current.getAttribute("exit")==0.0){
+            System.out.println("Went: "+current.improvedBestAction().getName());
+            current=executeAction(current);
+            this.setVariable("steps", Use("steps")+1.0);
+            if(Use("steps")>=Use("max_steps")){
+                this.setVariable("steps", 0.0);
+                break;
+            }
+        }
+        System.out.println("Reached exit ...\nWith: "+Use("steps"));
+        this.checkExitState(current);
+    }
+    public void MatrixForm(){
+        int sz=(int)Math.sqrt(this.DStates.size());
+        double node_type=0;
+        for(int i=0;i<this.DStates.size();i++){
+            if(i%sz==0){
+                System.out.println();
+            }
+            node_type=this.DStates.get(i).getAttribute("exit");
+            if(this.DStates.get(i).getAttribute("mark")==2){
+                System.out.print("-");
+                continue;
+            }
+            if(node_type==0.0){
+                System.out.print(" ");
+            }else if(node_type==1){
+                System.out.print("x");
+            }else{
+                System.out.print("#");
+            }
+        }
+        System.out.println();
+    }
+    public void LinearForm(){
+        for(States state:this.DStates){
+            if(state.getAttribute("exit")==0.0){
+                System.out.print("-");
+            }else if(state.getAttribute("exit")==0){
+                System.out.print("#");
+            }else{
+                System.out.print("$");
+            }
+        }
+    }
+    
     //Graphic solution, showed using [javax.swing]
     public void GraphicSolution(){
         int size= (int)Math.sqrt(this.DStates.size()+1);
@@ -461,7 +481,7 @@ public class Mind {
         this.StartMark();
         
         frame=new JFrame("Q-Learning");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        //frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLayout(new GridLayout(size,size));
         for(int i=0;i<size*size;i++){
             state_type=this.DStates.get(i).getAttribute("exit");
@@ -487,6 +507,7 @@ public class Mind {
             frame.add(button);
         }
         //Display the window.
+        this.clearMark("mark");
         frame.pack();
         frame.setVisible(true);
     }
@@ -664,4 +685,70 @@ public class Mind {
         this.setVariable("cursor", temp);
         this.GraphicSolution();
     }
+    
+    //Objectives
+    public void fillObjective(String obj){
+        String old=Current;
+        this.setObjective(obj);
+        this.setRandomObstacles(0.26);
+        this.setRandomGoals(4);
+        this.setObjective(old);
+    }
+    public void addObjective(String obj){
+        for(int i=0;i<this.DStates.size();i++){
+            this.DStates.get(i).addObjective(obj);
+        }
+        this.fillObjective(obj);
+    }
+    public void setObjective(String obj){
+        for(int i=0;i<this.DStates.size();i++){
+            this.DStates.get(i).setObjective(obj);
+        }
+        this.Current=obj;
+    }
+    
+    //Misc.
+    public List<States> getWhereLess(String name,double val){
+        List<States> result=new ArrayList<States>();
+        for(States st:this.DStates){
+            if(st.getAttribute(name)<val){
+                result.add(st);
+            }
+        }
+        return result;
+    }
+    public List<States> getWhereMore(String name,double val){
+        List<States> result=new ArrayList<States>();
+        for(States st:this.DStates){
+            if(st.getAttribute(name)>val){
+                result.add(st);
+            }
+        }
+        return result;
+    }
+    public List<States> getWhereEqual(String name,double val){
+        List<States> result=new ArrayList<States>();
+        for(States st:this.DStates){
+            if(st.getAttribute(name)==val){
+                result.add(st);
+            }
+        }
+        return result;
+    }
+    public List<States> getMarked(){
+        int cursor=(int)this.Use("cursor");
+        States current=this.DStates.get(cursor);
+        List<States> states=new ArrayList<States>();
+        while(current.getAttribute("exit")==0.0){
+            states.add(current);
+            for(Actions act:current.getActions()){
+                if(act.getState().getAttribute("mark")==2 || act.getState().getAttribute("exit")==1.0){
+                    current=act.getState();
+                    break;
+                }
+            }
+        }
+        return states.stream().distinct().collect(Collectors.toList());
+    }
+    
 }
