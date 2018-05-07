@@ -4,12 +4,14 @@ Or even more specifically Reinforced Learning (RL).
 Where the "agent" learns about its enviroment by probing
 different parts (states) of it.
 
-In its current state is able to:
-[v] Work in user define enviroment with no restriction on actions definition.
-[v] Finding optimal path to a given goal from every point in the enviroment.
-[v] Supports multi-objective learning.
-[!] For each objective the enviroment must be redefined.
-[SOON] Saving already trained models to files, and loading them later.  
+<ul>
+  In its current state is able to:
+  <li>[v] Work in user define enviroment with no restriction on actions definition.</li>
+  <li>[v] Finding optimal path to a given goal from every point in the enviroment.</li>
+  <li>[v] Supports multi-objective learning.</li>
+  <li>[!] For each objective the enviroment must be redefined.</li>
+  <li>[SOON] Saving already trained models to files, and loading them later.</li>  
+</ul>
 
 For more info check the Documentation, or one of the links bellow.
 
